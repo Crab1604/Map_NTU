@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bản đồ Trường Đại học Nha Trang</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<style>
+    body {
+        font-family: 'Times New Roman', Times, serif;
+        margin: 0;
+        padding: 0;
+        text-align: center;
+    }
+
+    h1 {
+        margin-top: 10px;
+    }
+
+    #controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin: 20px auto;
+        width: 100%;
+        max-width: 900px;
+    }
+
+    #map {
+        width: 100%;
+        height: calc(100vh - 200px);
+    }
+
+    label {
+        font-weight: bold;
+    }
+
+    select,
+    button {
+        padding: 5px;
+        font-size: 14px;
+    }
+
+    button {
+        cursor: pointer;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    #output {
+        margin-top: 10px;
+        font-weight: bold;
+    }
+</style>
+
+<body>
+    <h1>Bản đồ Trường Đại học Nha Trang</h1>
+    <div id="controls">
+        <label for="start">Điểm bắt đầu:</label>
+        <select id="start">
+            <option value="0">Chọn điểm bắt đầu</option>
+            <option value="Cổng chính">Cổng chính</option>
+            <option value="G1">Giảng đường G1</option>
+            <option value="G2">Giảng đường G2</option>
+            <option value="G3">Giảng đường G3</option>
+            <option value="G4">Giảng đường G4</option>
+            <option value="G5">Giảng đường G5</option>
+            <option value="G6">Giảng đường G6</option>
+            <option value="G7">Giảng đường G7</option>
+            <option value="G8">Giảng đường G8</option>
+            <option value="HT1">Hội trường 1</option>
+            <option value="HT2">Hội trường 2</option>
+            <option value="Nhà Đa Năng">Nhà Đa Năng</option>
+        </select>
+
+        <label for="end">Điểm đến:</label>
+        <select id="end">
+            <option value="0">Chọn điểm kết thúc</option>
+            <option value="Cổng chính">Cổng chính</option>
+            <option value="G1">Giảng đường G1</option>
+            <option value="G2">Giảng đường G2</option>
+            <option value="G3">Giảng đường G3</option>
+            <option value="G4">Giảng đường G4</option>
+            <option value="G5">Giảng đường G5</option>
+            <option value="G6">Giảng đường G6</option>
+            <option value="G7">Giảng đường G7</option>
+            <option value="G8">Giảng đường G8</option>
+            <option value="HT1">Hội trường 1</option>
+            <option value="HT2">Hội trường 2</option>
+            <option value="Nhà Đa Năng">Nhà Đa Năng</option>
+        </select>
+
+        <button onclick="findPath()">Tìm đường</button>
+    </div>
+    <p id="output"></p>
+    <div id="map"></div>
+
+    <script>
+        // Danh sách các điểm trên bản đồ
+        const locations = {
+            "Cổng chính": { lat: 12.268558961442176, lng: 109.20092000081786 },
+            "G8": { lat: 12.268500828517213, lng: 109.20149791181203 },
+            "node 3": { lat: 12.267802158982022, lng: 109.20148394135843 },
+            "node 4": { lat: 12.268601799636091, lng: 109.2018056456253 },
+            "node 5": { lat: 12.268654600925029, lng: 109.2026068924209 },
+            "G1": { lat: 12.268726295972902, lng: 109.2038671539797 },
+            "G2": { lat: 12.2682649737771, lng: 109.20413213228979 },
+            "node 8": { lat: 12.267808123711983, lng: 109.202657979592 },
+            "node 9": { lat: 12.267781994422933, lng: 109.20207972950922 },
+            "node 10": { lat: 12.267608887817598, lng: 109.2020763870232 },
+            "node 11": { lat: 12.267615420144388, lng: 109.20196608498426 },
+            "node 12": { lat: 12.267615420144388, lng: 109.20183907051523 },
+            "node 13": { lat: 12.267510902896246, lng: 109.2019460300681 },
+            "node 14": { lat: 12.267651050161303, lng: 109.20317915137747 },
+            "node 15": { lat: 12.267535414263621, lng: 109.20317915137747 },
+            "node 16": { lat: 12.26753588790326, lng: 109.20274160375 },
+            "HT2": { lat: 12.267179929797685, lng: 109.2024160789394 },
+            "node 18": { lat: 12.267555250423735, lng: 109.20374225998202 },
+            "G3": { lat: 12.267325655189783, lng: 109.20369366086565 },
+            "node 20": { lat: 12.267496427265574, lng: 109.20154332548663 },
+            "node 21": { lat: 12.266985978149668, lng: 109.20155777201873 },
+            "node 22": { lat: 12.266920453909423, lng: 109.20166237816738 },
+            "node 23": { lat: 12.266878518388465, lng: 109.20194401008833 },
+            "HT1": { lat: 12.266773679555074, lng: 109.2019708321775 },
+            "G4": { lat: 12.266757020863054, lng: 109.2013541112202 },
+            "node 26": { lat: 12.267017429776866, lng: 109.20107229223473 },
+            "G5": { lat: 12.267070097921003, lng: 109.20136692588478 },
+            "G6": { lat: 12.267063480423296, lng: 109.20051378966774 },
+            "node 29": { lat: 12.266978674431835, lng: 109.20049892957957 },
+            "Nhà Đa Năng": { lat: 12.267265081781119, lng: 109.20005764593655 },
+            "G7": { lat: 12.26752739143386, lng: 109.20007658959862 },
+            "node 32": { lat: 12.267536601739193, lng: 109.20033138241301 },
+            "node 33": { lat: 12.267800000000005, lng: 109.2003213411045 },
+            "node 34": { lat: 12.267695161535038, lng: 109.20052518899257 },
+            "node 35": { lat: 12.268664920420767, lng: 109.20252230030053 },
+            "node 36": { lat: 12.268779207009512, lng: 109.20268124281806 },
+            "node 37": { lat: 12.268849537192496, lng: 109.20287917123667 },
+            "node 38": { lat: 12.268840745918485, lng: 109.20342497384557 },
+        };
+
+        // Đồ thị với trọng số các cạnh
+        const graph = {
+            "Cổng chính": { "G8": 0.3, "node 3": 0.75 },
+            "G8": { "node 4": 0.2, "Cổng chính": 0.3 },
+            "node 3": { "node 20": 0.2, "node 34": 0.4, "Cổng chính": 0.75 },
+            "node 20": { "node 21": 0.2, "node 3": 0.2, "node 13": 0.2 },
+            "node 21": { "node 22": 0.1, "G5": 0.2, "node 20": 0.2 },
+            "G5": { "node 21": 0.2, "G6": 0.4 },
+            "node 22": { "G4": 0.1, "node 23": 0.1, "node 26": 0.3, "node 21": 0.1 },
+            "node 23": { "HT1": 0.1, "node 22": 0.1, "HT2": 0.2 },
+            "G4": { "HT1": 0.2, "node 22": 0.1 },
+            "node 26": { "node 22": 0.3, "node 29": 0.2 },
+            "G6": { "node 29": 0.1, "G5": 0.4 },
+            "node 29": { "G6": 0.1, "Nhà Đa Năng": 0.2 },
+            "Nhà Đa Năng": { "node 29": 0.2, "G7": 0.15 },
+            "G7": { "Nhà Đa Năng": 0.15, "node 32": 0.1 },
+            "node 32": { "Nhà Đa Năng": 0.1, "node 33": 0.15, "G7": 0.1 },
+            "node 33": { "node 32": 0.15, "node 34": 0.1 },
+            "node 34": { "node 33": 0.1, "node 3": 0.4 },
+            "node 4": { "G8": 0.2, "node 35": 0.3, "node 12": 0.7 },
+            "node 5": { "node 35": 0.1, "node 36": 0.1, "node 8": 0.5 },
+            "G1": { "G2": 0.2, "node 38": 0.15 },
+            "G2": { "G1": 0.2 },
+            "node 8": { "node 5": 0.5, "node 9": 0.2 },
+            "node 9": { "node 8": 0.2, "node 10": 0.1 },
+            "node 10": { "node 9": 0.1, "node 11": 0.1 },
+            "node 11": { "node 10": 0.1, "node 12": 0.1, "node 13": 0.1 },
+            "node 12": { "node 4": 0.7, "node 11": 0.1 },
+            "node 13": { "node 11": 0.1, "node 16": 0.2, "node 20": 0.2 },
+            "node 16": { "node 13": 0.2, "node 18": 0.65, "HT2": 0.15 },
+            "node 18": { "node 16": 0.65, "G3": 0.1 },
+            "G3": { "node 18": 0.1 },
+            "HT2": { "node 16": 0.15, "node 23": 0.2 },
+            "HT1": { "G4": 0.2, "node 23": 0.1 },
+            "node 35": { "node 5": 0.1, "node 4": 0.3 },
+            "node 36": { "node 5": 0.1, "node 37": 0.1 },
+            "node 37": { "node 38": 0.3, "node 36": 0.1 },
+            "node 38": { "G1": 0.15, "node 37": 0.3 },
+        };
+
+        // Khởi tạo bản đồ
+        const map = L.map("map").setView([12.268566497178167, 109.20133083614024], 16);
+
+        // Thêm lớp bản đồ
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Thêm marker cho các điểm
+        const markers = {};
+        for (const [name, pos] of Object.entries(locations)) {
+            if (!name.startsWith("node")) { // Kiểm tra nếu tên không bắt đầu bằng "node"
+                markers[name] = L.marker([pos.lat, pos.lng]).addTo(map).bindPopup(name);
+            }
+        }
+
+        // Thuật toán Dijkstra
+        function dijkstra(graph, start, end) {
+            const distances = {};
+            const prev = {};
+            const pq = [];
+
+            Object.keys(graph).forEach((node) => {
+                distances[node] = Infinity;
+                prev[node] = null;
+                pq.push(node);
+            });
+
+            distances[start] = 0;
+
+            while (pq.length > 0) {
+                pq.sort((a, b) => distances[a] - distances[b]);
+                const closest = pq.shift();
+
+                if (closest === end) break;
+
+                for (const neighbor in graph[closest]) {
+                    const alt = distances[closest] + graph[closest][neighbor];
+                    if (alt < distances[neighbor]) {
+                        distances[neighbor] = alt;
+                        prev[neighbor] = closest;
+                    }
+                }
+            }
+
+            const path = [];
+            let u = end;
+            while (u) {
+                path.unshift(u);
+                u = prev[u];
+            }
+
+            return { path, distance: distances[end] };
+        }
+
+        // Vẽ đường đi trên bản đồ
+        function drawPath(path) {
+            const latlngs = path.map((point) => [locations[point].lat, locations[point].lng]);
+            L.polyline(latlngs, { color: 'red' }).addTo(map);
+        }
+
+        // Tìm đường và hiển thị kết quả
+        function findPath() {
+            const start = document.getElementById("start").value;
+            const end = document.getElementById("end").value;
+
+            const result = dijkstra(graph, start, end);
+
+            // Lọc các điểm không hiển thị "node..." chỉ trong phần "Cách di chuyển"
+            const displayPath = result.path.filter((point) => !point.startsWith("node"));
+
+            document.getElementById(
+                "output"
+            ).innerText = `Cách di chuyển: ${displayPath.join(" -> ")}\nKhoảng cách: ${result.distance.toFixed(2)} km`;
+
+            drawPath(result.path);
+        }
+
+        // Vẽ đường đi trên bản đồ
+        let polyline;
+        function drawPath(path) {
+            if (polyline) map.removeLayer(polyline);
+
+            const points = path.map((p) => [locations[p].lat, locations[p].lng]);
+            polyline = L.polyline(points, { color: "red" }).addTo(map);
+        }
+    </script>
+</body>
+
+</html>
